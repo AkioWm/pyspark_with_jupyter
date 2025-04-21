@@ -1,0 +1,65 @@
+services:
+  spark-master:
+    image: bitnami/spark:3.5.0
+    container_name: spark-master
+    hostname: spark-master
+    environment:
+      - SPARK_MODE=master
+    volumes:
+      - ./notebooks:/home/jovyan/work/app/notebooks
+      - ./data:/home/jovyan/work/app/data
+      - ./output:/home/jovyan/work/app/output  
+    ports:
+      - "8080:8080"  # Interface web Spark Master
+      - "7077:7077"  # Port pour les Workers
+    networks:
+      - spark-network
+
+  spark-worker-1:
+    image: bitnami/spark:3.5.0
+    container_name: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    volumes:
+      - ./notebooks:/home/jovyan/work/app/notebooks
+      - ./data:/home/jovyan/work/app/data
+      - ./output:/home/jovyan/work/app/output  
+    depends_on:
+      - spark-master
+    networks:
+      - spark-network
+
+  spark-worker-2:
+    image: bitnami/spark:3.5.0
+    container_name: spark-worker-2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    volumes:
+      - ./notebooks:/home/jovyan/work/app/notebooks
+      - ./data:/home/jovyan/work/app/data
+      - ./output:/home/jovyan/work/app/output
+
+    depends_on:
+      - spark-master
+    networks:
+      - spark-network
+
+  jupyter:
+    image: jupyter/pyspark-notebook:spark-3.5.0
+    container_name: jupyter-notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work/app/notebooks
+      - ./data:/home/jovyan/work/app/data
+      - ./output:/home/jovyan/work/app/output
+    networks:
+      - spark-network
+    depends_on:
+      - spark-master
+
+
+networks:
+  spark-network:
